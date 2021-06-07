@@ -1,11 +1,76 @@
 import { useState } from 'react';
-import axios from 'axios';
 import useSWR from 'swr';
+import { fetcher, formatCurrency, formatNumber } from 'utils';
+import { Table } from 'components';
 
 const API_URL =
   'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=false&price_change_percentage=24h%2C7d';
 
-const fetcher = url => axios.get(url).then(res => res.data);
+const columns = [
+  {
+    label: '#',
+    renderCell: row => row.market_cap_rank,
+  },
+  {
+    label: 'Name',
+    renderCell: row => (
+      <span className="flex items-center space-x-2">
+        <img src={row.image} alt={row.symbol} width={24} height={24} />
+        <span>{row.name}</span>
+        <span className="uppercase text-gray-400">{row.symbol}</span>
+      </span>
+    ),
+  },
+  {
+    label: 'Price',
+    renderCell: row => formatCurrency(row.current_price),
+  },
+  {
+    label: '24h %',
+    renderCell: row => (
+      <span
+        className={
+          row.price_change_percentage_24h_in_currency > 0
+            ? 'text-green-500'
+            : 'text-red-500'
+        }
+      >
+        {formatNumber(row.price_change_percentage_24h_in_currency)}%
+      </span>
+    ),
+  },
+  {
+    label: '7d %',
+    renderCell: row => (
+      <span
+        className={
+          row.price_change_percentage_7d_in_currency > 0
+            ? 'text-green-500'
+            : 'text-red-500'
+        }
+      >
+        {formatNumber(row.price_change_percentage_7d_in_currency)}%
+      </span>
+    ),
+  },
+  {
+    label: 'Market cap',
+    renderCell: row => formatCurrency(row.market_cap),
+  },
+  {
+    label: 'Total Volume',
+    renderCell: row => formatCurrency(row.total_volume),
+  },
+  {
+    label: 'Circulating Supply',
+    renderCell: row => (
+      <span>
+        {formatNumber(row.circulating_supply)}{' '}
+        <span className="uppercase">{row.symbol}</span>
+      </span>
+    ),
+  },
+];
 
 const Home = () => {
   const [pageIndex, setPageIndex] = useState(1);
@@ -27,111 +92,29 @@ const Home = () => {
 
       <div className="container mx-auto">
         {error ? (
-          <p className="text-center text-red">
+          <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
             Something went wrong. Please try refreshing the page.
           </p>
         ) : !data ? (
-          <p className="text-center">Loading...</p>
-        ) : (
-          <table className="mx-auto">
-            <thead>
-              <tr>
-                <th className="text-right px-4 py-6 border-t">#</th>
-                <th className="text-left px-4 py-6 border-t">Name</th>
-                <th className="text-right px-4 py-6 border-t">Price</th>
-                <th className="text-right px-4 py-6 border-t">24h %</th>
-                <th className="text-right px-4 py-6 border-t">7d %</th>
-                <th className="text-right px-4 py-6 border-t">Market cap</th>
-                <th className="text-right px-4 py-6 border-t">Total Volume</th>
-                <th className="text-right px-4 py-6 border-t">
-                  Circulating Supply
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {data?.map(crypto => (
-                <tr key={crypto.id} className="hover:bg-gray-100">
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span>{crypto.market_cap_rank}</span>
-                  </td>
-                  <td className="text-left flex items-center space-x-2 px-4 py-6 whitespace-nowrap border-t">
-                    <img
-                      src={crypto.image}
-                      alt={crypto.symbol}
-                      width={24}
-                      height={24}
+          <div className="rounded-md container mx-auto space-y-6  animate-pulse">
+            <span className="h-20 w-full rounded-md block bg-gray-200" />
+            <div className="space-y-4">
+              {/* Rows */}
+              {[...new Array(10)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  {/* Columns */}
+                  {[...new Array(5)].map((_, i) => (
+                    <span
+                      key={i}
+                      className="h-12 w-full rounded-md block bg-gray-200"
                     />
-                    <span>{crypto.name}</span>
-                    <span className="uppercase">{crypto.symbol}</span>
-                  </td>
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span>
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                        maximumFractionDigits: 10,
-                      }).format(crypto.current_price)}
-                    </span>
-                  </td>
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span
-                      className={
-                        crypto?.price_change_percentage_24h_in_currency > 0
-                          ? 'text-green'
-                          : 'text-red'
-                      }
-                    >
-                      {crypto?.price_change_percentage_24h_in_currency?.toFixed(
-                        2
-                      ) ?? '-'}
-                      %
-                    </span>
-                  </td>
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span
-                      className={
-                        crypto?.price_change_percentage_7d_in_currency > 0
-                          ? 'text-green'
-                          : 'text-red'
-                      }
-                    >
-                      {crypto?.price_change_percentage_7d_in_currency?.toFixed(
-                        2
-                      ) ?? '-'}
-                      %
-                    </span>
-                  </td>
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span>
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                        maximumFractionDigits: 10,
-                      }).format(crypto.market_cap)}
-                    </span>
-                  </td>
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span>
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                        maximumFractionDigits: 10,
-                      }).format(crypto.total_volume)}
-                    </span>
-                  </td>
-                  <td className="text-right px-4 py-6 whitespace-nowrap border-t">
-                    <span>
-                      {new Intl.NumberFormat('en-US').format(
-                        crypto.circulating_supply
-                      )}{' '}
-                      <span className="uppercase">{crypto.symbol}</span>
-                    </span>
-                  </td>
-                </tr>
+                  ))}
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
+        ) : (
+          <Table columns={columns} rows={data} />
         )}
       </div>
     </div>
