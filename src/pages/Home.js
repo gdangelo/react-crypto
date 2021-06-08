@@ -7,22 +7,30 @@ import { Pagination, Select, Table } from 'components';
 
 const API_URL = 'https://api.coingecko.com/api/v3';
 
-const columns = [
+const columns = (isLargeScreen = false) => [
   {
     id: 'rank',
     label: '#',
     renderCell: row => row?.market_cap_rank ?? '-',
+    hidden: !isLargeScreen,
   },
   {
     id: 'name',
     label: 'Name',
     align: 'left',
     renderCell: row => (
-      <span className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2">
         <img src={row.image} alt={row.symbol} width={24} height={24} />
-        <span>{row.name}</span>
-        <span className="uppercase text-gray-400">{row.symbol}</span>
-      </span>
+        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+          <span className="text-sm sm:text-base">{row.name}</span>
+          <p className="uppercase text-xs sm:text-sm">
+            <span className="bg-gray-200 text-gray-500 rounded-md py-1 px-2 font-medium mr-1 sm:hidden">
+              {row.market_cap_rank}
+            </span>
+            <span className="text-gray-400">{row.symbol}</span>
+          </p>
+        </div>
+      </div>
     ),
   },
   {
@@ -130,7 +138,7 @@ const Home = () => {
         </h1>
       </header>
 
-      <div className="w-full max-w-screen-2xl mx-auto">
+      <div className="w-full max-w-screen-2xl mx-auto overflow-x-hidden">
         {error ? (
           <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
             Something went wrong. Please try refreshing the page.
@@ -157,7 +165,7 @@ const Home = () => {
               </div>
             ) : (
               <Table
-                columns={columns}
+                columns={columns(isLargeScreen)}
                 rows={data}
                 pageLimit={pageLimit}
                 onLimitChange={setPageIndex}
