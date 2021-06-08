@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid';
 
 const iconClass =
-  'w-6 h-6 flex-shrink-0 opacity-50 hover:opacity-100 cursor-pointer';
+  'w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 opacity-50 hover:opacity-100 cursor-pointer';
 
 const numberClass = active =>
   `py-1 px-3 rounded-md cursor-pointer ${
@@ -11,6 +11,7 @@ const numberClass = active =>
 const Pagination = ({
   currentPage = 1,
   totalPages = 1,
+  delta = 2,
   onPageChange = () => null,
 }) => {
   const goToPrev = () => onPageChange(currentPage - 1);
@@ -30,12 +31,12 @@ const Pagination = ({
   };
 
   const renderDots = key => (
-    <span key={key} className="py-1 px-3">
+    <span key={key} className="py-1 px-1 sm:px-3">
       ...
     </span>
   );
 
-  const generatePages = (delta = 2) => {
+  const generatePages = () => {
     let pages = [],
       left = currentPage - delta,
       right = currentPage + delta,
@@ -63,7 +64,7 @@ const Pagination = ({
   };
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-1 sm:space-x-2">
       {/* Previous page */}
       <ChevronLeftIcon className={iconClass} onClick={goToPrev} />
       {/* Middle pages */}

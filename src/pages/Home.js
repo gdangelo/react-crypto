@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
+import { useMediaQuery, useLocalStorage } from 'hooks';
 import { fetcher, formatCurrency, formatNumber } from 'utils';
-import { Table, Pagination } from 'components';
+import { Pagination, Select, Table } from 'components';
 
 const API_URL = 'https://api.coingecko.com/api/v3';
 
@@ -87,13 +88,17 @@ const columns = [
   },
 ];
 
+const limits = [100, 50, 20];
+
 const Home = () => {
   const history = useHistory();
   const location = useLocation();
   const query = new URLSearchParams(location.search);
 
+  const isLargeScreen = useMediaQuery(['(min-width: 640px)'], [true], false);
+
   const [pageIndex, setPageIndex] = useState(parseInt(query.get('page')) || 1);
-  const [pageLimit, setPageLimit] = useState(100);
+  const [pageLimit, setPageLimit] = useLocalStorage('page-limit', limits[0]);
 
   const { data: globalData } = useSWR(`${API_URL}/global`);
 
@@ -104,10 +109,16 @@ const Home = () => {
 
   const total = globalData?.data?.active_cryptocurrencies;
   const totalPages = Math.ceil(total / pageLimit);
+  const start = 1 + (pageIndex - 1) * pageLimit;
+  const end = total ? Math.min(start + pageLimit - 1, total) : '...';
 
   const handleOnPageChange = newPage => {
     setPageIndex(newPage);
     history.push(`${location.pathname}?page=${newPage}`);
+  };
+
+  const handleOnLimitChange = newLimit => {
+    setPageLimit(newLimit);
   };
 
   return (
@@ -119,7 +130,7 @@ const Home = () => {
         </h1>
       </header>
 
-      <div className="w-full max-w-screen-2xl mx-auto overflow-hidden">
+      <div className="w-full max-w-screen-2xl mx-auto">
         {error ? (
           <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
             Something went wrong. Please try refreshing the page.
@@ -134,7 +145,7 @@ const Home = () => {
                   {[...new Array(10)].map((_, i) => (
                     <div key={i} className="flex items-center space-x-4">
                       {/* Columns */}
-                      {[...new Array(5)].map((_, i) => (
+                      {[...new Array(isLargeScreen ? 6 : 1)].map((_, i) => (
                         <span
                           key={i}
                           className="h-12 w-full rounded-md block bg-gray-200"
@@ -152,12 +163,28 @@ const Home = () => {
                 onLimitChange={setPageIndex}
               />
             )}
-            <div className="flex items-center justify-center space-x-4 mt-6">
-              <Pagination
-                currentPage={pageIndex}
-                totalPages={totalPages}
-                onPageChange={handleOnPageChange}
-              />
+            <div className="flex flex-col lg:flex-row items-center justify-between lg:space-x-4 mt-6">
+              <div className="text-gray-600 mt-6 lg:mt-0">
+                Showing <span className="font-medium">{start}</span> to{' '}
+                <span className="font-medium">{end}</span> of{' '}
+                <span className="font-medium">{total}</span> results
+              </div>
+              <div className="order-first lg:order-none mx-auto">
+                <Pagination
+                  currentPage={pageIndex}
+                  totalPages={totalPages}
+                  delta={isLargeScreen ? 2 : 1}
+                  onPageChange={handleOnPageChange}
+                />
+              </div>
+              <div className="flex items-center space-x-2 text-gray-600 mt-6 lg:mt-0">
+                <span>Show rows</span>
+                <Select
+                  options={limits}
+                  initialOption={pageLimit}
+                  onSelect={handleOnLimitChange}
+                />
+              </div>
             </div>
           </>
         )}
