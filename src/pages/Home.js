@@ -1,18 +1,21 @@
 import { useState } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { fetcher, formatCurrency, formatNumber } from 'utils';
-import { Table } from 'components';
+import { Table, Pagination } from 'components';
 
-const API_URL =
-  'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=false&price_change_percentage=24h%2C7d';
+const API_URL = 'https://api.coingecko.com/api/v3';
 
 const columns = [
   {
+    id: 'rank',
     label: '#',
-    renderCell: row => row.market_cap_rank,
+    renderCell: row => row?.market_cap_rank ?? '-',
   },
   {
+    id: 'name',
     label: 'Name',
+    align: 'left',
     renderCell: row => (
       <span className="flex items-center space-x-2">
         <img src={row.image} alt={row.symbol} width={24} height={24} />
@@ -22,11 +25,15 @@ const columns = [
     ),
   },
   {
+    id: 'price',
     label: 'Price',
+    align: 'right',
     renderCell: row => formatCurrency(row.current_price),
   },
   {
+    id: 'price_change_perc_24h',
     label: '24h %',
+    align: 'right',
     renderCell: row => (
       <span
         className={
@@ -40,7 +47,9 @@ const columns = [
     ),
   },
   {
+    id: 'price_change_perc_7d',
     label: '7d %',
+    align: 'right',
     renderCell: row => (
       <span
         className={
@@ -54,15 +63,21 @@ const columns = [
     ),
   },
   {
+    id: 'market_cap',
     label: 'Market cap',
+    align: 'right',
     renderCell: row => formatCurrency(row.market_cap),
   },
   {
+    id: 'total_volume',
     label: 'Total Volume',
+    align: 'right',
     renderCell: row => formatCurrency(row.total_volume),
   },
   {
+    id: 'circulating_supply',
     label: 'Circulating Supply',
+    align: 'right',
     renderCell: row => (
       <span>
         {formatNumber(row.circulating_supply)}{' '}
@@ -73,16 +88,30 @@ const columns = [
 ];
 
 const Home = () => {
-  const [pageIndex, setPageIndex] = useState(1);
+  const history = useHistory();
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+
+  const [pageIndex, setPageIndex] = useState(parseInt(query.get('page')) || 1);
   const [pageLimit, setPageLimit] = useState(100);
 
+  const { data: globalData } = useSWR(`${API_URL}/global`);
+
   const { data, error } = useSWR(
-    `${API_URL}&page=${pageIndex}&per_page=${pageLimit}`,
+    `${API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=false&price_change_percentage=24h%2C7d&page=${pageIndex}&per_page=${pageLimit}`,
     fetcher
   );
 
+  const total = globalData?.data?.active_cryptocurrencies;
+  const totalPages = Math.ceil(total / pageLimit);
+
+  const handleOnPageChange = newPage => {
+    setPageIndex(newPage);
+    history.push(`${location.pathname}?page=${newPage}`);
+  };
+
   return (
-    <div className="px-4 py-8 space-y-16">
+    <div className="px-4 sm:px-6 py-8 space-y-16">
       <header className="flex flex-col items-center space-y-4">
         <img src="logo.svg" alt="AlterClass" className="h-8" />
         <h1 className="capitalize text-center text-2xl font-semibold">
@@ -90,31 +119,47 @@ const Home = () => {
         </h1>
       </header>
 
-      <div className="container mx-auto">
+      <div className="w-full max-w-screen-2xl mx-auto overflow-hidden">
         {error ? (
           <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
             Something went wrong. Please try refreshing the page.
           </p>
-        ) : !data ? (
-          <div className="rounded-md container mx-auto space-y-6  animate-pulse">
-            <span className="h-20 w-full rounded-md block bg-gray-200" />
-            <div className="space-y-4">
-              {/* Rows */}
-              {[...new Array(10)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  {/* Columns */}
-                  {[...new Array(5)].map((_, i) => (
-                    <span
-                      key={i}
-                      className="h-12 w-full rounded-md block bg-gray-200"
-                    />
+        ) : (
+          <>
+            {!data ? (
+              <div className="rounded-md space-y-6 animate-pulse">
+                <span className="h-20 w-full rounded-md block bg-gray-200" />
+                <div className="space-y-4">
+                  {/* Rows */}
+                  {[...new Array(10)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      {/* Columns */}
+                      {[...new Array(5)].map((_, i) => (
+                        <span
+                          key={i}
+                          className="h-12 w-full rounded-md block bg-gray-200"
+                        />
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
+              </div>
+            ) : (
+              <Table
+                columns={columns}
+                rows={data}
+                pageLimit={pageLimit}
+                onLimitChange={setPageIndex}
+              />
+            )}
+            <div className="flex items-center justify-center space-x-4 mt-6">
+              <Pagination
+                currentPage={pageIndex}
+                totalPages={totalPages}
+                onPageChange={handleOnPageChange}
+              />
             </div>
-          </div>
-        ) : (
-          <Table columns={columns} rows={data} />
+          </>
         )}
       </div>
     </div>
