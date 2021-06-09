@@ -2,15 +2,35 @@ import axios from 'axios';
 
 export const fetcher = url => axios.get(url).then(res => res.data);
 
-export const formatCurrency = (value = 0, locale = 'en-US', currency = 'USD') =>
-  new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
+export const formatCurrency = (value = 0, options = null) => {
+  const opts = {
+    currency: 'USD',
     maximumFractionDigits: 10,
-  }).format(value);
+    ...options,
+  };
 
-export const formatNumber = (value, fraction = 2) =>
-  new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: fraction,
-    maximumFractionDigits: fraction,
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    ...opts,
   }).format(value);
+};
+
+export const formatNumber = (value, options = null) => {
+  const opts = {
+    notation: 'standard',
+    compactDisplay: 'long',
+    maximumFractionDigits: 2,
+    ...options,
+  };
+
+  return new Intl.NumberFormat('en-US', opts).format(value);
+};
+
+export const createMarkup = str => {
+  return {
+    __html: str.replace(
+      /<a href="([^>]+)">(.+?)<\/a>/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer">$2</a>'
+    ),
+  };
+};

@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory, useLocation, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useMediaQuery, useLocalStorage } from 'hooks';
+import { API_URL } from 'constants';
 import { fetcher, formatCurrency, formatNumber } from 'utils';
-import { Pagination, Select, Table } from 'components';
-
-const API_URL = 'https://api.coingecko.com/api/v3';
+import { Pagination, Select, Table, TableSkeleton } from 'components';
+import { Layout } from 'partials';
 
 const columns = (isLargeScreen = false) => [
   {
     id: 'rank',
     label: '#',
-    renderCell: row => row?.market_cap_rank ?? '-',
+    renderCell: row => (
+      <span className="text-sm">{row?.market_cap_rank ?? '-'}</span>
+    ),
     hidden: !isLargeScreen,
   },
   {
@@ -19,18 +21,18 @@ const columns = (isLargeScreen = false) => [
     label: 'Name',
     align: 'left',
     renderCell: row => (
-      <div className="flex items-center space-x-2">
+      <Link to={`/coins/${row.id}`} className="flex items-center space-x-2">
         <img src={row.image} alt={row.symbol} width={24} height={24} />
         <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
           <span className="text-sm sm:text-base">{row.name}</span>
-          <p className="uppercase text-xs sm:text-sm">
+          <p className="uppercase text-xs sm:text-base">
             <span className="bg-gray-200 text-gray-500 rounded-md py-1 px-2 font-medium mr-1 sm:hidden">
               {row.market_cap_rank}
             </span>
             <span className="text-gray-400">{row.symbol}</span>
           </p>
         </div>
-      </div>
+      </Link>
     ),
   },
   {
@@ -75,13 +77,15 @@ const columns = (isLargeScreen = false) => [
     id: 'market_cap',
     label: 'Market cap',
     align: 'right',
-    renderCell: row => formatCurrency(row.market_cap),
+    renderCell: row =>
+      formatCurrency(row.market_cap, { maximumFractionDigits: 0 }),
   },
   {
     id: 'total_volume',
     label: 'Total Volume',
     align: 'right',
-    renderCell: row => formatCurrency(row.total_volume),
+    renderCell: row =>
+      formatCurrency(row.total_volume, { maximumFractionDigits: 0 }),
   },
   {
     id: 'circulating_supply',
@@ -103,22 +107,40 @@ const Home = () => {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
 
+  // Check screen dimensions
   const isLargeScreen = useMediaQuery(['(min-width: 640px)'], [true], false);
 
+  // For controlling the table's pagination
   const [pageIndex, setPageIndex] = useState(parseInt(query.get('page')) || 1);
   const [pageLimit, setPageLimit] = useLocalStorage('page-limit', limits[0]);
 
-  const { data: globalData } = useSWR(`${API_URL}/global`);
-
-  const { data, error } = useSWR(
-    `${API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=false&price_change_percentage=24h%2C7d&page=${pageIndex}&per_page=${pageLimit}`,
-    fetcher
+  // Fetch global data about market from API
+  const { data: globalData } = useSWR(
+    'https://api.coingecko.com/api/v3/global',
+    {
+      refreshInterval: 1000,
+    }
   );
 
-  const total = globalData?.data?.active_cryptocurrencies;
-  const totalPages = Math.ceil(total / pageLimit);
+  // Fetch coins market data from API (paginated)
+  const { data: coins, error } = useSWR(
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=false&price_change_percentage=24h%2C7d&page=${pageIndex}&per_page=${pageLimit}`,
+    fetcher,
+    {
+      refreshInterval: 1000,
+    }
+  );
+
+  // Compute/retrieve data to display
+  const totalMarketCap = globalData?.data?.total_market_cap?.usd ?? 0;
+  const marketCapChangePerc24h =
+    globalData?.data?.market_cap_change_percentage_24h_usd ?? 0;
+  const totalActiveCryptos = globalData?.data?.active_cryptocurrencies ?? 0;
+  const totalPages = Math.ceil(totalActiveCryptos / pageLimit);
   const start = 1 + (pageIndex - 1) * pageLimit;
-  const end = total ? Math.min(start + pageLimit - 1, total) : '...';
+  const end = totalActiveCryptos
+    ? Math.min(start + pageLimit - 1, totalActiveCryptos)
+    : '...';
 
   const handleOnPageChange = newPage => {
     setPageIndex(newPage);
@@ -130,74 +152,76 @@ const Home = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 py-8 space-y-16">
-      <header className="flex flex-col items-center space-y-4">
-        <img src="logo.svg" alt="AlterClass" className="h-8" />
-        <h1 className="capitalize text-center text-2xl font-semibold">
+    <Layout>
+      <div className="mb-12 space-y-2">
+        <h1 className="capitalize text-2xl font-semibold">
           Today's cryptocurrency prices by market cap
         </h1>
-      </header>
-
-      <div className="w-full max-w-screen-2xl mx-auto overflow-x-hidden">
-        {error ? (
-          <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
-            Something went wrong. Please try refreshing the page.
-          </p>
-        ) : (
-          <>
-            {!data ? (
-              <div className="rounded-md space-y-6 animate-pulse">
-                <span className="h-20 w-full rounded-md block bg-gray-200" />
-                <div className="space-y-4">
-                  {/* Rows */}
-                  {[...new Array(10)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      {/* Columns */}
-                      {[...new Array(isLargeScreen ? 6 : 1)].map((_, i) => (
-                        <span
-                          key={i}
-                          className="h-12 w-full rounded-md block bg-gray-200"
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <Table
-                columns={columns(isLargeScreen)}
-                rows={data}
-                pageLimit={pageLimit}
-                onLimitChange={setPageIndex}
-              />
-            )}
-            <div className="flex flex-col lg:flex-row items-center justify-between lg:space-x-4 mt-6">
-              <div className="text-gray-600 mt-6 lg:mt-0">
-                Showing <span className="font-medium">{start}</span> to{' '}
-                <span className="font-medium">{end}</span> of{' '}
-                <span className="font-medium">{total}</span> results
-              </div>
-              <div className="order-first lg:order-none mx-auto">
-                <Pagination
-                  currentPage={pageIndex}
-                  totalPages={totalPages}
-                  delta={isLargeScreen ? 2 : 1}
-                  onPageChange={handleOnPageChange}
-                />
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600 mt-6 lg:mt-0">
-                <span>Show rows</span>
-                <Select
-                  options={limits}
-                  initialOption={pageLimit}
-                  onSelect={handleOnLimitChange}
-                />
-              </div>
-            </div>
-          </>
-        )}
+        <p className="text-gray-500">
+          The global crypto market cap is $
+          {formatNumber(totalMarketCap, {
+            notation: 'compact',
+          })}
+          , a{' '}
+          <span
+            className={`${
+              marketCapChangePerc24h < 0 ? 'text-red-500' : 'text-green-500'
+            }`}
+          >
+            {formatNumber(marketCapChangePerc24h)}%
+          </span>{' '}
+          {marketCapChangePerc24h < 0 ? 'decrease' : 'increase'} over the last
+          day.
+        </p>
       </div>
-    </div>
+
+      {error ? (
+        <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
+          Something went wrong. Please try refreshing the page.
+        </p>
+      ) : (
+        <>
+          {!coins ? (
+            <TableSkeleton cols={isLargeScreen ? 6 : 1} />
+          ) : (
+            <Table
+              columns={columns(isLargeScreen)}
+              rows={coins}
+              pageLimit={pageLimit}
+              onLimitChange={setPageIndex}
+            />
+          )}
+          <div className="flex flex-col lg:flex-row items-center justify-between lg:space-x-4 mt-6">
+            {/* Table info */}
+            <div className="text-gray-600 mt-6 lg:mt-0">
+              Showing <span className="font-medium">{start}</span> to{' '}
+              <span className="font-medium">{end}</span> of{' '}
+              <span className="font-medium">{totalActiveCryptos}</span> results
+            </div>
+
+            {/* Table pagination */}
+            <div className="order-first lg:order-none mx-auto">
+              <Pagination
+                currentPage={pageIndex}
+                totalPages={totalPages}
+                delta={isLargeScreen ? 2 : 1}
+                onPageChange={handleOnPageChange}
+              />
+            </div>
+
+            {/* Page limit selection */}
+            <div className="flex items-center space-x-2 text-gray-600 mt-6 lg:mt-0">
+              <span>Show rows</span>
+              <Select
+                options={limits}
+                initialOption={pageLimit}
+                onSelect={handleOnLimitChange}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </Layout>
   );
 };
 

@@ -1,7 +1,9 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid';
 
-const iconClass =
-  'w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 opacity-50 hover:opacity-100 cursor-pointer';
+const iconClass = disabled =>
+  `w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 opacity-50 ${
+    disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:opacity-100'
+  }`;
 
 const numberClass = active =>
   `py-1 px-3 rounded-md cursor-pointer ${
@@ -14,6 +16,9 @@ const Pagination = ({
   delta = 2,
   onPageChange = () => null,
 }) => {
+  const isFirstPage = currentPage === 1;
+  const isLastPage = currentPage === totalPages;
+
   const goToPrev = () => onPageChange(currentPage - 1);
   const goToNext = () => onPageChange(currentPage + 1);
   const goToPage = i => onPageChange(i);
@@ -66,11 +71,17 @@ const Pagination = ({
   return (
     <div className="flex items-center space-x-1 sm:space-x-2">
       {/* Previous page */}
-      <ChevronLeftIcon className={iconClass} onClick={goToPrev} />
+      <ChevronLeftIcon
+        className={iconClass(isFirstPage)}
+        onClick={!isFirstPage ? goToPrev : null}
+      />
       {/* Middle pages */}
       {currentPage >= 1 && totalPages >= currentPage ? generatePages() : null}
       {/* Next page */}
-      <ChevronRightIcon className={iconClass} onClick={goToNext} />
+      <ChevronRightIcon
+        className={iconClass(isLastPage)}
+        onClick={!isLastPage ? goToNext : null}
+      />
     </div>
   );
 };
