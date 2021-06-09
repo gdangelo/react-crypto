@@ -32,6 +32,8 @@ export const formatDate = (value, options = null) => {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
     ...options,
   };
 
