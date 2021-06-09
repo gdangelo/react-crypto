@@ -1,6 +1,15 @@
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, NavLink } from 'react-router-dom';
 import useSWR from 'swr';
-import { fetcher, formatCurrency, formatNumber, createMarkup } from 'utils';
+import { Chart } from 'react-charts';
+import { useLocalStorage } from 'hooks';
+import {
+  fetcher,
+  formatCurrency,
+  formatNumber,
+  formatDate,
+  createMarkup,
+} from 'utils';
 import { Layout } from 'partials';
 import {
   CodeIcon,
@@ -9,11 +18,49 @@ import {
   ExternalLinkIcon,
 } from '@heroicons/react/outline';
 
+const series = {
+  showPoints: true,
+};
+
+const axes = [
+  {
+    primary: true,
+    position: 'bottom',
+    type: 'time',
+    showGrid: false,
+  },
+  { position: 'left', type: 'linear', format: d => `$${d}` },
+];
+
+const tooltip = {
+  anchor: 'closest',
+  align: 'auto',
+  render: ({ datum }) =>
+    datum ? (
+      <div className="text-white pointer-events-none px-2 py-1">
+        <h3 className="font-semibold">{formatDate(datum.primary)}</h3>
+        <p>
+          Price:{' '}
+          <span className="font-semibold">
+            {formatCurrency(datum.secondary)}
+          </span>
+        </p>
+      </div>
+    ) : null,
+};
+
+const cursor = {
+  showLabel: false,
+};
+
 const Coins = () => {
   const { id } = useParams();
 
+  const [daysRange, setDaysRange] = useLocalStorage('chart_days_range', 'max');
+  const [activeDatumIndex, setActiveDatumIndex] = useState(-1);
+
   // Fetch coin market data from API using ID from params
-  const { data, error } = useSWR(
+  const { data: coin, error } = useSWR(
     `https://api.coingecko.com/api/v3/coins/${id}?tickers=false&sparkline=true`,
     fetcher,
     {
@@ -21,22 +68,66 @@ const Coins = () => {
     }
   );
 
+  // Fetch coin chart data from API
+  const { data: market_chart, error: market_chart_error } = useSWR(
+    `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${daysRange}`,
+    fetcher,
+    {
+      refreshInterval: 1000,
+    }
+  );
+
+  // Format and memoized market data
+  const memoized_market_chart = useMemo(() => {
+    return [
+      {
+        label: 'Price',
+        data:
+          market_chart?.prices?.map(([ts, price]) => ({
+            primary: new Date(ts),
+            secondary: price,
+          })) ?? [],
+      },
+    ];
+  }, [market_chart]);
+
+  const getDatumStyle = useCallback(
+    datum => ({
+      r: activeDatumIndex === datum.index ? 7 : 0,
+    }),
+    [activeDatumIndex]
+  );
+
+  const getSeriesStyle = useCallback(series => {
+    const start = series?.datums?.[0]?.yValue,
+      end = series?.datums?.[series.datums.length - 1]?.yValue;
+
+    return {
+      color: end > start ? '#22C55E' : '#EF4444',
+    };
+  }, []);
+
+  const onFocus = useCallback(
+    focused => setActiveDatumIndex(focused ? focused.index : -1),
+    [setActiveDatumIndex]
+  );
+
   // Retrieve and build UI for the coin's links
   const renderCoinLinks = () => {
     const links = [];
 
     // Retrieve coin's website
-    if (data?.links?.homepage?.[0]) {
+    if (coin?.links?.homepage?.[0]) {
       links.push({
-        url: data.links.homepage[0],
+        url: coin.links.homepage[0],
         label: 'Homepage',
         icon: LinkIcon,
       });
     }
     // Retrieve coin's source code repository
-    if (data?.links?.repos_url?.github?.[0]) {
+    if (coin?.links?.repos_url?.github?.[0]) {
       links.push({
-        url: data.links.repos_url.github[0],
+        url: coin.links.repos_url.github[0],
         label: 'Source code',
         icon: CodeIcon,
       });
@@ -46,6 +137,7 @@ const Coins = () => {
       <div className="flex space-x-2 mt-6">
         {links.map(({ url, label, icon: Icon }) => (
           <a
+            key={label}
             href={url}
             target="_blank"
             rel="noopener noreferrer"
@@ -67,7 +159,7 @@ const Coins = () => {
       symbol,
       image: { large: image_url = '' },
       market_cap_rank,
-    } = data;
+    } = coin;
 
     return (
       <div>
@@ -110,10 +202,10 @@ const Coins = () => {
         low_24h: { usd: low = 0 },
         high_24h: { usd: high = 0 },
       },
-    } = data;
+    } = coin;
 
     return (
-      <div class="flex flex-col sm:items-end">
+      <div className="flex flex-col sm:items-end">
         <div className="flex justify-between sm:justify-start items-center space-x-2">
           <span className="text-3xl sm:text-4xl font-bold truncate">
             {formatCurrency(price)}
@@ -128,7 +220,9 @@ const Coins = () => {
         </div>
         <div className="mt-4 text-gray-500 text-sm sm:text-base text-left sm:text-right">
           <p>
-            Low: {formatCurrency(low)} - High: {formatCurrency(high)} (24h)
+            Low: <span className="font-semibold">{formatCurrency(low)}</span> -
+            High: <span className="font-semibold">{formatCurrency(high)}</span>{' '}
+            (24h)
           </p>
         </div>
       </div>
@@ -144,7 +238,7 @@ const Coins = () => {
         total_volume: { usd: total_volume = 0 },
         circulating_supply = 0,
       },
-    } = data;
+    } = coin;
 
     const items = [
       {
@@ -172,11 +266,94 @@ const Coins = () => {
     ];
 
     return items.map(({ label, value }) => (
-      <div className="flex flex-row sm:flex-col justify-between items-center space-x-2 sm:space-x-0 sm:space-y-1">
+      <div
+        key={label}
+        className="flex flex-row sm:flex-col justify-between items-center space-x-2 sm:space-x-0 sm:space-y-1"
+      >
         <p className="text-sm sm:text-lg capitalize">{label}</p>
         <p className="text-base sm:text-xl font-semibold">{value}</p>
       </div>
     ));
+  };
+
+  const renderCoinChart = () => {
+    const days = [
+      {
+        label: '24H',
+        value: 1,
+      },
+      {
+        label: '7D',
+        value: 7,
+      },
+      {
+        label: '1M',
+        value: 30,
+      },
+      {
+        label: '3M',
+        value: 90,
+      },
+      {
+        label: '1Y',
+        value: 365,
+      },
+      {
+        label: 'MAX',
+        value: 'max',
+      },
+    ];
+
+    return (
+      <div className="mt-4">
+        {/* Days ranges */}
+        <div className="flex justify-between items-center space-x-1 bg-gray-200 w-full max-w-xs p-1 rounded-md">
+          {days.map(({ label, value }) => (
+            <span
+              key={value}
+              onClick={() => setDaysRange(value)}
+              className={`py-1 px-2 sm:px-3 uppercase font-medium text-sm text-gray-500 rounded-md hover:bg-gray-50 cursor-pointer ${
+                value === daysRange ? 'bg-white' : 'bg-transparent'
+              }`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Chart */}
+        <div
+          className={`mt-8 w-full h-80 sm:h-[28rem] ${
+            market_chart_error || !market_chart
+              ? 'flex items-center rounded-md bg-gray-100'
+              : ''
+          }`}
+        >
+          {market_chart_error ? (
+            <p className="text-center text-red-500 mx-auto px-2">
+              Something went wrong. Please try refreshing the page.
+            </p>
+          ) : !market_chart ? (
+            <p className="text-center text-gray-500 mx-auto px-2">
+              <span className="animate-pulse">
+                Please wait, we are loading the chart...
+              </span>
+            </p>
+          ) : (
+            <Chart
+              data={memoized_market_chart}
+              series={series}
+              axes={axes}
+              tooltip={tooltip}
+              getSeriesStyle={getSeriesStyle}
+              getDatumStyle={getDatumStyle}
+              onFocus={onFocus}
+              primaryCursor={cursor}
+            />
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -185,9 +362,9 @@ const Coins = () => {
         <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
           Something went wrong. Please try refreshing the page.
         </p>
-      ) : !data ? (
+      ) : !coin ? (
         <p className="text-center text-gray-500 bg-gray-200 rounded-md max-w-max mx-auto py-3 px-12">
-          <span className="animate-pulse">Loading data...</span>
+          <span className="animate-pulse">Loading coin...</span>
         </p>
       ) : (
         <>
@@ -198,7 +375,7 @@ const Coins = () => {
             </NavLink>
             <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
             <NavLink to={`/coins/${id}`} activeClassName="font-semibold">
-              {data.name}
+              {coin.name}
             </NavLink>
           </div>
 
@@ -213,15 +390,21 @@ const Coins = () => {
             {renderCoinMarketData()}
           </div>
 
+          {/* Coin's chart */}
+          <div className="mt-16">
+            <h2 className="text-xl sm:text-3xl">{coin.name} Chart</h2>
+            {renderCoinChart()}
+          </div>
+
           {/* Coin's description */}
           <div className="mt-16">
             <h2 className="text-xl sm:text-3xl">
-              About {data.name}{' '}
-              <span className="uppercase">({data.symbol})</span>
+              About {coin.name}{' '}
+              <span className="uppercase">({coin.symbol})</span>
             </h2>
             <p
               className="mt-4 prose lg:prose-xl max-w-none"
-              dangerouslySetInnerHTML={createMarkup(data.description?.en ?? '')}
+              dangerouslySetInnerHTML={createMarkup(coin.description?.en ?? '')}
             />
           </div>
         </>

@@ -8,7 +8,7 @@ const Table = ({ columns = [], rows = [] }) => (
             ?.map((column, index) => (
               <th
                 key={column.id}
-                className={`bg-gray-50 px-2 py-4 sm:px-4 text-sm sm:text-base whitespace-nowrap font-semibold ${
+                className={`bg-gray-50 px-2 py-4 sm:px-4 text-sm sm:text-base whitespace-nowrap font-semibold capitalize ${
                   column?.align === 'right'
                     ? 'text-right'
                     : column?.align === 'left'

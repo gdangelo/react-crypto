@@ -26,6 +26,18 @@ export const formatNumber = (value, options = null) => {
   return new Intl.NumberFormat('en-US', opts).format(value);
 };
 
+export const formatDate = (value, options = null) => {
+  const opts = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    ...options,
+  };
+
+  return new Intl.DateTimeFormat('en-US', opts).format(value);
+};
+
 export const createMarkup = str => {
   return {
     __html: str.replace(
