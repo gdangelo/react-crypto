@@ -1,10 +1,42 @@
 import { useState } from 'react';
 import { useHistory, useLocation, Link } from 'react-router-dom';
+import { Chart } from 'react-charts';
 import useSWR from 'swr';
 import { useMediaQuery, useLocalStorage } from 'hooks';
 import { fetcher, formatCurrency, formatNumber } from 'utils';
 import { Pagination, Select, Table, TableSkeleton } from 'components';
 import { Layout } from 'partials';
+
+const series = {
+  showPoints: false,
+};
+
+const axes = [
+  {
+    primary: true,
+    position: 'bottom',
+    type: 'linear',
+    show: false,
+  },
+  { position: 'left', type: 'linear', show: false },
+];
+
+const formatSparklineData = data => [
+  {
+    label: 'Last 7 days',
+    data: data.map((value, i) => ({
+      primary: i,
+      secondary: value,
+    })),
+  },
+];
+
+const getSeriesStyle =
+  (color = 'black') =>
+  () => ({
+    color: color,
+    opacity: 1,
+  });
 
 const columns = (isLargeScreen = false) => [
   {
@@ -97,6 +129,25 @@ const columns = (isLargeScreen = false) => [
       </span>
     ),
   },
+  {
+    id: 'sparkline_in_7d',
+    label: 'Last 7 days',
+    align: 'right',
+    renderCell: row => (
+      <div className="h-12 w-40">
+        <Chart
+          data={formatSparklineData(row?.sparkline_in_7d?.price ?? [])}
+          series={series}
+          getSeriesStyle={getSeriesStyle(
+            row?.price_change_percentage_7d_in_currency > 0
+              ? '#22C55E'
+              : '#EF4444'
+          )}
+          axes={axes}
+        />
+      </div>
+    ),
+  },
 ];
 
 const limits = [100, 50, 20];
@@ -123,7 +174,7 @@ const Home = () => {
 
   // Fetch coins market data from API (paginated)
   const { data: coins, error } = useSWR(
-    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=false&price_change_percentage=24h%2C7d&page=${pageIndex}&per_page=${pageLimit}`,
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=true&price_change_percentage=24h%2C7d&page=${pageIndex}&per_page=${pageLimit}`,
     fetcher,
     {
       refreshInterval: 1000,

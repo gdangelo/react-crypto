@@ -29,7 +29,7 @@ const Table = ({ columns = [], rows = [] }) => (
               ?.map((column, index) => (
                 <td
                   key={column.id}
-                  className={`bg-gray-50 group-hover:bg-gray-100 border-t px-2 py-4 sm:px-4 sm:py-6 ${
+                  className={`bg-gray-50 group-hover:bg-gray-100 border-t px-2 py-4 sm:px-4 sm:py-4 ${
                     column?.align === 'right'
                       ? 'text-right'
                       : column?.align === 'left'
