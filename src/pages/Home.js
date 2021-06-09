@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useMediaQuery, useLocalStorage } from 'hooks';
-import { API_URL } from 'constants';
 import { fetcher, formatCurrency, formatNumber } from 'utils';
 import { Pagination, Select, Table, TableSkeleton } from 'components';
 import { Layout } from 'partials';

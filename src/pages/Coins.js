@@ -1,6 +1,5 @@
 import { useParams, NavLink } from 'react-router-dom';
 import useSWR from 'swr';
-import { API_URL } from 'constants';
 import { fetcher, formatCurrency, formatNumber, createMarkup } from 'utils';
 import { Layout } from 'partials';
 import {
