@@ -1,3 +1,6 @@
+const alignClass = align =>
+  align === 'right' ? 'text-right' : align === 'left' ? 'text-left' : 'center';
+
 const Table = ({ columns = [], rows = [] }) => (
   <div className="overflow-x-scroll sm:overflow-x-auto">
     <table className="w-full">
@@ -8,19 +11,9 @@ const Table = ({ columns = [], rows = [] }) => (
             ?.map((column, index) => (
               <th
                 key={column.id}
-                className={`bg-gray-50 px-2 py-4 sm:px-4 text-sm sm:text-base whitespace-nowrap font-semibold capitalize ${
-                  column?.align === 'right'
-                    ? 'text-right'
-                    : column?.align === 'left'
-                    ? 'text-left'
-                    : 'center'
-                } ${
-                  index === 0
-                    ? 'sticky sm:static left-0 z-10 min-w-[2.25rem] sm:min-w-0'
-                    : index === 1
-                    ? 'sticky sm:static left-[2.25rem] z-10 min-w-[7.5rem] sm:min-w-0'
-                    : ''
-                }`}
+                className={`bg-gray-50 px-2 sm:px-3 py-3 text-sm sm:text-base whitespace-nowrap font-semibold capitalize ${alignClass(
+                  column.align
+                )}`}
               >
                 {column.label}
               </th>
@@ -35,19 +28,9 @@ const Table = ({ columns = [], rows = [] }) => (
               ?.map((column, index) => (
                 <td
                   key={column.id}
-                  className={`bg-gray-50 group-hover:bg-gray-100 border-t px-2 py-4 sm:px-4 sm:py-4 ${
-                    column?.align === 'right'
-                      ? 'text-right'
-                      : column?.align === 'left'
-                      ? 'text-left'
-                      : 'center'
-                  } ${
-                    index === 0
-                      ? 'sticky sm:static left-0 z-10 min-w-[2.25rem] sm:min-w-0'
-                      : index === 1
-                      ? 'sticky sm:static left-[2.25rem] z-10 min-w-[7.5rem] sm:min-w-0'
-                      : ''
-                  }`}
+                  className={`bg-gray-50 group-hover:bg-gray-100 border-t px-2 sm:px-3 py-3 ${alignClass(
+                    column.align
+                  )}`}
                 >
                   {column?.renderCell(row)}
                 </td>

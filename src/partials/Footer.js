@@ -41,7 +41,7 @@ const navLists = [
 
 const Footer = () => (
   <footer className="mt-20 py-6 px-4 sm:px-8">
-    <div className="w-full xl:max-w-screen-xl mx-auto">
+    <div className="w-full xl:max-w-screen-2xl mx-auto">
       <div className="flex flex-col md:flex-row md:justify-between space-y-12 md:space-y-0 md:space-x-16">
         <div className="space-y-4">
           <Logo />

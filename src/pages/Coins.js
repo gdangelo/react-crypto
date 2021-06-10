@@ -11,7 +11,9 @@ import {
   ChevronRightIcon,
   LinkIcon,
   ExternalLinkIcon,
+  StarIcon as StarIconOutline,
 } from '@heroicons/react/outline';
+import { StarIcon } from '@heroicons/react/solid';
 import config from 'config';
 
 const {
@@ -30,6 +32,10 @@ const Coins = () => {
 
   const [daysRange, setDaysRange] = useLocalStorage('chart-days-range', 'max');
   const [activeDatumIndex, setActiveDatumIndex] = useState(-1);
+
+  // Retrieve coin's IDs in watchlist
+  const [watchlist, setWatchlist] = useLocalStorage('crypto-watchlist', []);
+  const isInWatchlist = watchlist?.find(el => el === id);
 
   // Fetch coin market data from API using ID from params
   const { data: coin, error } = useSWR(
@@ -63,10 +69,17 @@ const Coins = () => {
     ];
   }, [market_chart]);
 
-  const getDatumStyleMemoized = useCallback(
-    () => getDatumStyle(activeDatumIndex),
-    [activeDatumIndex]
-  );
+  const getDatumStyleMemoized = useCallback(getDatumStyle(activeDatumIndex), [
+    activeDatumIndex,
+  ]);
+
+  const handleOnClickWatchlist = () => {
+    if (isInWatchlist) {
+      setWatchlist(watchlist?.filter(el => el !== id) ?? []);
+    } else {
+      setWatchlist([...watchlist, id]);
+    }
+  };
 
   const onFocusChart = useCallback(
     focused => setActiveDatumIndex(focused ? focused.index : -1),
@@ -133,12 +146,25 @@ const Coins = () => {
               className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0"
             />
           ) : null}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <span className="text-2xl sm:text-4xl font-semibold truncate">
               {name}
             </span>
             <span className="bg-gray-100 text-gray-500 text-xs font-medium uppercase rounded-md py-1 px-2">
               {symbol}
+            </span>
+            <span className="border border-gray-400 rounded-md group cursor-pointer p-1">
+              {isInWatchlist ? (
+                <StarIcon
+                  className="w-4 h-4 text-yellow-500"
+                  onClick={handleOnClickWatchlist}
+                />
+              ) : (
+                <StarIconOutline
+                  className="w-4 h-4 text-gray-400 group-hover:text-yellow-500"
+                  onClick={handleOnClickWatchlist}
+                />
+              )}
             </span>
           </div>
         </div>

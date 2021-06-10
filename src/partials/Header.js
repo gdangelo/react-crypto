@@ -16,7 +16,7 @@ const navLinks = [
 
 const Header = () => (
   <header className="py-4 px-4 sm:px-8 border-b bg-white">
-    <div className="w-full xl:max-w-screen-xl mx-auto flex items-center space-x-16">
+    <div className="w-full xl:max-w-screen-2xl mx-auto flex items-center space-x-12">
       <div className="flex-shrink-0">
         <Logo />
       </div>

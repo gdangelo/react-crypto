@@ -71,7 +71,9 @@ const columns = (
       <Link to={`/coins/${row.id}`} className="flex items-center space-x-2">
         <img src={row.image} alt={row.symbol} width={24} height={24} />
         <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-          <span className="text-sm sm:text-base">{row.name}</span>
+          <span className="text-sm sm:text-base sm:whitespace-nowrap">
+            {row.name}
+          </span>
           <p className="uppercase text-xs sm:text-base">
             <span className="bg-gray-200 text-gray-500 rounded-md py-1 px-2 font-medium mr-1 sm:hidden">
               {row.market_cap_rank}
