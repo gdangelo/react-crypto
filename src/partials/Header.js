@@ -1,4 +1,5 @@
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { Logo } from 'components';
 
 const navLinks = [
   {
@@ -15,18 +16,13 @@ const navLinks = [
 
 const Header = () => (
   <header className="py-4 px-4 sm:px-8 border-b bg-white">
-    <div className="container lg:max-w-screen-2xl mx-auto flex items-center space-x-12">
-      {/* Logo */}
-      <Link to="/">
-        <img
-          src={`${process.env.PUBLIC_URL}/logo.svg`}
-          alt="AlterClass"
-          className="h-8"
-        />
-      </Link>
+    <div className="w-full xl:max-w-screen-xl mx-auto flex items-center space-x-16">
+      <div className="flex-shrink-0">
+        <Logo />
+      </div>
 
       {/* Navigation links */}
-      <nav className="space-x-8">
+      <nav className="hidden sm:block space-x-8">
         {navLinks.map(link => (
           <NavLink
             key={link.label}

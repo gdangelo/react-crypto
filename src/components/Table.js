@@ -14,7 +14,13 @@ const Table = ({ columns = [], rows = [] }) => (
                     : column?.align === 'left'
                     ? 'text-left'
                     : 'center'
-                } ${index === 0 ? 'sticky sm:static left-0 z-10' : ''}`}
+                } ${
+                  index === 0
+                    ? 'sticky sm:static left-0 z-10 min-w-[2.25rem] sm:min-w-0'
+                    : index === 1
+                    ? 'sticky sm:static left-[2.25rem] z-10 min-w-[7.5rem] sm:min-w-0'
+                    : ''
+                }`}
               >
                 {column.label}
               </th>
@@ -35,7 +41,13 @@ const Table = ({ columns = [], rows = [] }) => (
                       : column?.align === 'left'
                       ? 'text-left'
                       : 'center'
-                  } ${index === 0 ? 'sticky left-0 z-10 sm:static' : ''}`}
+                  } ${
+                    index === 0
+                      ? 'sticky sm:static left-0 z-10 min-w-[2.25rem] sm:min-w-0'
+                      : index === 1
+                      ? 'sticky sm:static left-[2.25rem] z-10 min-w-[7.5rem] sm:min-w-0'
+                      : ''
+                  }`}
                 >
                   {column?.renderCell(row)}
                 </td>

@@ -1,3 +1,4 @@
+export { default as Logo } from './Logo';
 export { default as Message } from './Message';
 export { default as Pagination } from './Pagination';
 export { default as Select } from './Select';
