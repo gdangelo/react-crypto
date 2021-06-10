@@ -40,6 +40,16 @@ export const formatDate = (value, options = null) => {
   return new Intl.DateTimeFormat('en-US', opts).format(value);
 };
 
+export const formatSparklineData = (data = []) => [
+  {
+    label: 'Last 7 days',
+    data: data?.map((value, i) => ({
+      primary: i,
+      secondary: value,
+    })),
+  },
+];
+
 export const createMarkup = str => {
   return {
     __html: str.replace(

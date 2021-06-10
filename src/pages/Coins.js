@@ -1,15 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useParams, NavLink } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { Chart } from 'react-charts';
 import { useLocalStorage } from 'hooks';
-import {
-  fetcher,
-  formatCurrency,
-  formatNumber,
-  formatDate,
-  createMarkup,
-} from 'utils';
+import { fetcher, formatCurrency, formatNumber, createMarkup } from 'utils';
+import { Message } from 'components';
 import { Layout } from 'partials';
 import {
   CodeIcon,
@@ -17,46 +12,23 @@ import {
   LinkIcon,
   ExternalLinkIcon,
 } from '@heroicons/react/outline';
+import config from 'config';
 
-const series = {
-  showPoints: true,
-};
-
-const axes = [
-  {
-    primary: true,
-    position: 'bottom',
-    type: 'time',
-    showGrid: false,
+const {
+  coinChart: {
+    axes,
+    series,
+    primaryCursor,
+    tooltip,
+    getSeriesStyle,
+    getDatumStyle,
   },
-  { position: 'left', type: 'linear', format: d => `$${d}` },
-];
-
-const tooltip = {
-  anchor: 'closest',
-  align: 'auto',
-  render: ({ datum }) =>
-    datum ? (
-      <div className="text-white pointer-events-none px-2 py-1">
-        <h3 className="font-semibold">{formatDate(datum.primary)}</h3>
-        <p>
-          Price:{' '}
-          <span className="font-semibold">
-            {formatCurrency(datum.secondary)}
-          </span>
-        </p>
-      </div>
-    ) : null,
-};
-
-const cursor = {
-  showLabel: false,
-};
+} = config;
 
 const Coins = () => {
   const { id } = useParams();
 
-  const [daysRange, setDaysRange] = useLocalStorage('chart_days_range', 'max');
+  const [daysRange, setDaysRange] = useLocalStorage('chart-days-range', 'max');
   const [activeDatumIndex, setActiveDatumIndex] = useState(-1);
 
   // Fetch coin market data from API using ID from params
@@ -91,23 +63,12 @@ const Coins = () => {
     ];
   }, [market_chart]);
 
-  const getDatumStyle = useCallback(
-    datum => ({
-      r: activeDatumIndex === datum.index ? 7 : 0,
-    }),
+  const getDatumStyleMemoized = useCallback(
+    () => getDatumStyle(activeDatumIndex),
     [activeDatumIndex]
   );
 
-  const getSeriesStyle = useCallback(series => {
-    const start = series?.datums?.[0]?.yValue,
-      end = series?.datums?.[series.datums.length - 1]?.yValue;
-
-    return {
-      color: end > start ? '#22C55E' : '#EF4444',
-    };
-  }, []);
-
-  const onFocus = useCallback(
+  const onFocusChart = useCallback(
     focused => setActiveDatumIndex(focused ? focused.index : -1),
     [setActiveDatumIndex]
   );
@@ -330,15 +291,11 @@ const Coins = () => {
           }`}
         >
           {market_chart_error ? (
-            <p className="text-center text-red-500 mx-auto px-2">
+            <Message error>
               Something went wrong. Please try refreshing the page.
-            </p>
+            </Message>
           ) : !market_chart ? (
-            <p className="text-center text-gray-500 mx-auto px-2">
-              <span className="animate-pulse">
-                Please wait, we are loading the chart...
-              </span>
-            </p>
+            <Message loading>Please wait, we are loading the chart...</Message>
           ) : (
             <Chart
               data={memoized_market_chart}
@@ -346,9 +303,9 @@ const Coins = () => {
               axes={axes}
               tooltip={tooltip}
               getSeriesStyle={getSeriesStyle}
-              getDatumStyle={getDatumStyle}
-              onFocus={onFocus}
-              primaryCursor={cursor}
+              getDatumStyle={getDatumStyleMemoized}
+              onFocus={onFocusChart}
+              primaryCursor={primaryCursor}
             />
           )}
         </div>
@@ -359,24 +316,18 @@ const Coins = () => {
   return (
     <Layout>
       {error ? (
-        <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
+        <Message error>
           Something went wrong. Please try refreshing the page.
-        </p>
+        </Message>
       ) : !coin ? (
-        <p className="text-center text-gray-500 bg-gray-200 rounded-md max-w-max mx-auto py-3 px-12">
-          <span className="animate-pulse">Loading coin...</span>
-        </p>
+        <Message loading>Loading coin...</Message>
       ) : (
         <>
           {/* Breadcrumbs */}
           <div className="flex items-center space-x-1">
-            <NavLink exact to="/">
-              Coins
-            </NavLink>
+            <Link to="/">Coins</Link>
             <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
-            <NavLink to={`/coins/${id}`} activeClassName="font-semibold">
-              {coin.name}
-            </NavLink>
+            <span className="font-semibold cursor-default">{coin.name}</span>
           </div>
 
           {/* Coin's info + price */}

@@ -1,156 +1,15 @@
 import { useState } from 'react';
-import { useHistory, useLocation, Link } from 'react-router-dom';
-import { Chart } from 'react-charts';
+import { useHistory, useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 import { useMediaQuery, useLocalStorage } from 'hooks';
-import { fetcher, formatCurrency, formatNumber } from 'utils';
-import { Pagination, Select, Table, TableSkeleton } from 'components';
+import { fetcher, formatNumber } from 'utils';
+import { Message, Pagination, Select, Table, TableSkeleton } from 'components';
 import { Layout } from 'partials';
+import config from 'config';
 
-const series = {
-  showPoints: false,
-};
-
-const axes = [
-  {
-    primary: true,
-    position: 'bottom',
-    type: 'linear',
-    show: false,
-  },
-  { position: 'left', type: 'linear', show: false },
-];
-
-const formatSparklineData = data => [
-  {
-    label: 'Last 7 days',
-    data: data.map((value, i) => ({
-      primary: i,
-      secondary: value,
-    })),
-  },
-];
-
-const getSeriesStyle =
-  (color = 'black') =>
-  () => ({
-    color: color,
-    opacity: 1,
-  });
-
-const columns = (isLargeScreen = false) => [
-  {
-    id: 'rank',
-    label: '#',
-    renderCell: row => (
-      <span className="text-sm">{row?.market_cap_rank ?? '-'}</span>
-    ),
-    hidden: !isLargeScreen,
-  },
-  {
-    id: 'name',
-    label: 'Name',
-    align: 'left',
-    renderCell: row => (
-      <Link to={`/coins/${row.id}`} className="flex items-center space-x-2">
-        <img src={row.image} alt={row.symbol} width={24} height={24} />
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-          <span className="text-sm sm:text-base">{row.name}</span>
-          <p className="uppercase text-xs sm:text-base">
-            <span className="bg-gray-200 text-gray-500 rounded-md py-1 px-2 font-medium mr-1 sm:hidden">
-              {row.market_cap_rank}
-            </span>
-            <span className="text-gray-400">{row.symbol}</span>
-          </p>
-        </div>
-      </Link>
-    ),
-  },
-  {
-    id: 'price',
-    label: 'Price',
-    align: 'right',
-    renderCell: row => formatCurrency(row.current_price),
-  },
-  {
-    id: 'price_change_perc_24h',
-    label: '24h %',
-    align: 'right',
-    renderCell: row => (
-      <span
-        className={
-          row.price_change_percentage_24h_in_currency > 0
-            ? 'text-green-500'
-            : 'text-red-500'
-        }
-      >
-        {formatNumber(row.price_change_percentage_24h_in_currency)}%
-      </span>
-    ),
-  },
-  {
-    id: 'price_change_perc_7d',
-    label: '7d %',
-    align: 'right',
-    renderCell: row => (
-      <span
-        className={
-          row.price_change_percentage_7d_in_currency > 0
-            ? 'text-green-500'
-            : 'text-red-500'
-        }
-      >
-        {formatNumber(row.price_change_percentage_7d_in_currency)}%
-      </span>
-    ),
-  },
-  {
-    id: 'market_cap',
-    label: 'Market cap',
-    align: 'right',
-    renderCell: row =>
-      formatCurrency(row.market_cap, { maximumFractionDigits: 0 }),
-  },
-  {
-    id: 'total_volume',
-    label: 'Total Volume',
-    align: 'right',
-    renderCell: row =>
-      formatCurrency(row.total_volume, { maximumFractionDigits: 0 }),
-  },
-  {
-    id: 'circulating_supply',
-    label: 'Circulating Supply',
-    align: 'right',
-    renderCell: row => (
-      <span>
-        {formatNumber(row.circulating_supply)}{' '}
-        <span className="uppercase">{row.symbol}</span>
-      </span>
-    ),
-  },
-  {
-    id: 'sparkline_in_7d',
-    label: 'Last 7 days',
-    align: 'right',
-    renderCell: row => (
-      <div className="h-12 w-40">
-        <Chart
-          data={formatSparklineData(row?.sparkline_in_7d?.price ?? [])}
-          series={series}
-          getSeriesStyle={getSeriesStyle(
-            row?.price_change_percentage_7d_in_currency > 0
-              ? '#22C55E'
-              : '#EF4444'
-          )}
-          axes={axes}
-        />
-      </div>
-    ),
-  },
-];
-
-const limits = [100, 50, 20];
+const {
+  table: { columns, limits },
+} = config;
 
 const Home = () => {
   const history = useHistory();
@@ -164,6 +23,8 @@ const Home = () => {
   const [pageIndex, setPageIndex] = useState(parseInt(query.get('page')) || 1);
   const [pageLimit, setPageLimit] = useLocalStorage('page-limit', limits[0]);
 
+  const [watchlist, setWatchlist] = useLocalStorage('crypto-watchlist', []);
+
   // Fetch global data about market from API
   const { data: globalData } = useSWR(
     'https://api.coingecko.com/api/v3/global',
@@ -173,13 +34,22 @@ const Home = () => {
   );
 
   // Fetch coins market data from API (paginated)
-  const { data: coins, error } = useSWR(
+  let { data: coins, error } = useSWR(
     `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&sparkline=true&price_change_percentage=24h%2C7d&page=${pageIndex}&per_page=${pageLimit}`,
     fetcher,
     {
       refreshInterval: 1000,
     }
   );
+
+  // Format coins data
+  if (coins && watchlist) {
+    coins = coins?.map(coin =>
+      watchlist?.find(el => el === coin.id)
+        ? { ...coin, isInWatchlist: true }
+        : coin
+    );
+  }
 
   // Compute/retrieve data to display
   const totalMarketCap = globalData?.data?.total_market_cap?.usd ?? 0;
@@ -192,11 +62,13 @@ const Home = () => {
     ? Math.min(start + pageLimit - 1, totalActiveCryptos)
     : '...';
 
+  // Event handlers - page number change
   const handleOnPageChange = newPage => {
     setPageIndex(newPage);
     history.push(`${location.pathname}?page=${newPage}`);
   };
 
+  // Event handlers - page limit change
   const handleOnLimitChange = newLimit => {
     setPageLimit(newLimit);
   };
@@ -226,19 +98,21 @@ const Home = () => {
       </div>
 
       {error ? (
-        <p className="text-center text-red-500 bg-red-100 rounded-md max-w-max mx-auto py-3 px-12">
+        <Message error>
           Something went wrong. Please try refreshing the page.
-        </p>
+        </Message>
       ) : (
         <>
           {!coins ? (
             <TableSkeleton cols={isLargeScreen ? 6 : 1} />
           ) : (
             <Table
-              columns={columns(isLargeScreen)}
+              columns={columns(
+                isLargeScreen,
+                id => setWatchlist([...watchlist, id]),
+                id => setWatchlist(watchlist?.filter(el => el !== id) ?? [])
+              )}
               rows={coins}
-              pageLimit={pageLimit}
-              onLimitChange={setPageIndex}
             />
           )}
           <div className="flex flex-col lg:flex-row items-center justify-between lg:space-x-4 mt-6">

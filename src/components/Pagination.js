@@ -63,7 +63,9 @@ const Pagination = ({
     if (totalPages - prev > 1) {
       pages.push(renderDots(prev + 1));
     }
-    pages.push(renderNumber(totalPages));
+    if (totalPages > 1) {
+      pages.push(renderNumber(totalPages));
+    }
 
     return pages;
   };
