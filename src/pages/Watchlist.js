@@ -50,7 +50,7 @@ const Watchlist = () => {
         <Message error>
           Something went wrong. Please try refreshing the page.
         </Message>
-      ) : isValidating ? (
+      ) : isValidating && !coins ? (
         <TableSkeleton cols={isLargeScreen ? 6 : 1} />
       ) : !coins || coins?.length === 0 ? (
         <Message>
