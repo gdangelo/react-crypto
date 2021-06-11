@@ -17,14 +17,7 @@ import { StarIcon } from '@heroicons/react/solid';
 import config from 'config';
 
 const {
-  coinChart: {
-    axes,
-    series,
-    primaryCursor,
-    tooltip,
-    getSeriesStyle,
-    getDatumStyle,
-  },
+  coinChart: { axes, series, primaryCursor, tooltip },
 } = config;
 
 const Coins = () => {

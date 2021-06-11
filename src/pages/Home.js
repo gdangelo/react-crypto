@@ -64,8 +64,11 @@ const Home = () => {
 
   // Event handlers - page number change
   const handleOnPageChange = newPage => {
+    // Update page state variable + path
     setPageIndex(newPage);
     history.push(`${location.pathname}?page=${newPage}`);
+    // Scroll to top
+    window.scrollTo(0, 0);
   };
 
   // Event handlers - page limit change
