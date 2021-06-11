@@ -25,16 +25,20 @@ const navLists = [
   {
     title: 'Support',
     links: [
-      { label: 'Contact us', exact: true, path: '/contact' },
-      { label: 'FAQ', exact: true, path: '/faq' },
+      { label: 'Contact us', path: 'https://alterclass.io' },
+      { label: 'FAQ', path: 'https://alterclass.io' },
     ],
   },
   {
     title: 'Socials',
     links: [
-      { label: 'Facebook', path: 'https://www.facebook.com' },
-      { label: 'Twitter', path: 'https://twitter.com' },
-      { label: 'Instagram', path: 'https://www.instagram.com' },
+      { label: 'Facebook', path: 'https://www.facebook.com/alterclass' },
+      { label: 'Twitter', path: 'https://twitter.com/AlterClassIO' },
+      {
+        label: 'Youtube',
+        path: 'https://www.youtube.com/channel/UCn858neTm5-bPjl6-wznR2g',
+      },
+      { label: 'Instagram', path: 'https://www.instagram.com/alterclass.io/' },
     ],
   },
 ];
