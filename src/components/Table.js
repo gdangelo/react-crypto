@@ -25,7 +25,7 @@ const Table = ({ columns = [], rows = [] }) => (
           <tr key={row.id} className="group">
             {columns
               ?.filter(column => !column.hidden)
-              ?.map((column, index) => (
+              ?.map(column => (
                 <td
                   key={column.id}
                   className={`bg-gray-50 group-hover:bg-gray-100 border-t px-2 sm:px-3 py-3 ${alignClass(

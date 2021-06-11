@@ -5,34 +5,12 @@ import {
   formatNumber,
   formatSparklineData,
 } from 'utils';
-import { Chart } from 'react-charts';
 import { StarIcon } from '@heroicons/react/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/outline';
+import { Sparkline } from 'components';
 
 // Coins listing table config
 const limits = [100, 50, 20];
-
-const sparkline = {
-  axes: [
-    {
-      primary: true,
-      position: 'bottom',
-      type: 'linear',
-      show: false,
-    },
-    { position: 'left', type: 'linear', show: false },
-  ],
-  series: {
-    showPoints: false,
-  },
-  getSeriesStyle:
-    (up = true) =>
-    () => ({
-      color: up ? '#22C55E' : '#EF4444', // up -> green, down -> red
-      opacity: 1,
-    }),
-  getFormattedData: (data = []) => formatSparklineData(data),
-};
 
 const columns = (
   isLargeScreen = false,
@@ -152,19 +130,38 @@ const columns = (
     label: 'Last 7 days',
     align: 'right',
     renderCell: row => (
-      <div className="h-12 w-40 flex">
-        <Chart
-          data={sparkline.getFormattedData(row?.sparkline_in_7d?.price ?? [])}
-          series={sparkline.series}
-          getSeriesStyle={sparkline.getSeriesStyle(
-            row?.price_change_percentage_7d_in_currency > 0
-          )}
-          axes={sparkline.axes}
+      <div className="h-12 w-40">
+        <Sparkline
+          data={row?.sparkline_in_7d?.price ?? []}
+          up={row?.price_change_percentage_7d_in_currency > 0}
         />
       </div>
     ),
   },
 ];
+
+// Sparkline config
+const sparkline = {
+  axes: [
+    {
+      primary: true,
+      position: 'bottom',
+      type: 'linear',
+      show: false,
+    },
+    { position: 'left', type: 'linear', show: false },
+  ],
+  series: {
+    showPoints: false,
+  },
+  getSeriesStyle:
+    (up = true) =>
+    () => ({
+      color: up ? '#22C55E' : '#EF4444', // up -> green, down -> red
+      opacity: 1,
+    }),
+  getFormattedData: (data = []) => formatSparklineData(data),
+};
 
 // Coin chart config
 const coinChart = {
@@ -199,6 +196,32 @@ const coinChart = {
         </div>
       ) : null,
   },
+  days: [
+    {
+      label: '24H',
+      value: 1,
+    },
+    {
+      label: '7D',
+      value: 7,
+    },
+    {
+      label: '1M',
+      value: 30,
+    },
+    {
+      label: '3M',
+      value: 90,
+    },
+    {
+      label: '1Y',
+      value: 365,
+    },
+    {
+      label: 'MAX',
+      value: 'max',
+    },
+  ],
 };
 
 const config = {
@@ -206,6 +229,7 @@ const config = {
     columns,
     limits,
   },
+  sparkline,
   coinChart,
 };
 export default config;

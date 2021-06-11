@@ -1,10 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import useSWR from 'swr';
-import { Chart } from 'react-charts';
 import { useLocalStorage } from 'hooks';
 import { fetcher, formatCurrency, formatNumber, createMarkup } from 'utils';
-import { Message } from 'components';
+import { MarketChart, Message } from 'components';
 import { Layout } from 'partials';
 import {
   CodeIcon,
@@ -17,14 +15,13 @@ import { StarIcon } from '@heroicons/react/solid';
 import config from 'config';
 
 const {
-  coinChart: { axes, series, primaryCursor, tooltip },
+  coinChart: { days },
 } = config;
 
 const Coins = () => {
   const { id } = useParams();
 
   const [daysRange, setDaysRange] = useLocalStorage('chart-days-range', 'max');
-  const [activeDatumIndex, setActiveDatumIndex] = useState(-1);
 
   // Retrieve coin's IDs in watchlist
   const [watchlist, setWatchlist] = useLocalStorage('crypto-watchlist', []);
@@ -40,42 +37,13 @@ const Coins = () => {
   );
 
   // Fetch coin chart data from API
-  const { data: market_chart, error: market_chart_error } = useSWR(
+  const { data: market_chart_data, error: market_chart_error } = useSWR(
     `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${daysRange}`,
     fetcher,
     {
       refreshInterval: 1000,
     }
   );
-
-  // Format and memoized market data
-  const memoized_market_chart = useMemo(() => {
-    return [
-      {
-        label: 'Price',
-        data:
-          market_chart?.prices?.map(([ts, price]) => ({
-            primary: new Date(ts),
-            secondary: price,
-          })) ?? [],
-      },
-    ];
-  }, [market_chart]);
-
-  const getDatumStyleMemoized = useCallback(
-    datum => ({
-      r: activeDatumIndex === datum.index ? 7 : 0,
-    }),
-    [activeDatumIndex]
-  );
-
-  const getSeriesStyle = useCallback(series => {
-    const start = series?.datums?.[0]?.yValue,
-      end = series?.datums?.[series.datums.length - 1]?.yValue;
-    return {
-      color: end > start ? '#22C55E' : '#EF4444',
-    };
-  }, []);
 
   const handleOnClickWatchlist = () => {
     if (isInWatchlist) {
@@ -84,11 +52,6 @@ const Coins = () => {
       setWatchlist([...watchlist, id]);
     }
   };
-
-  const handleOnFocusChart = useCallback(
-    focused => setActiveDatumIndex(focused ? focused.index : -1),
-    [setActiveDatumIndex]
-  );
 
   // Retrieve and build UI for the coin's links
   const renderCoinLinks = () => {
@@ -268,38 +231,11 @@ const Coins = () => {
   };
 
   const renderCoinChart = () => {
-    const days = [
-      {
-        label: '24H',
-        value: 1,
-      },
-      {
-        label: '7D',
-        value: 7,
-      },
-      {
-        label: '1M',
-        value: 30,
-      },
-      {
-        label: '3M',
-        value: 90,
-      },
-      {
-        label: '1Y',
-        value: 365,
-      },
-      {
-        label: 'MAX',
-        value: 'max',
-      },
-    ];
-
     return (
       <div className="mt-4">
         {/* Days ranges */}
         <div className="flex justify-between items-center space-x-1 bg-gray-200 w-full max-w-xs p-1 rounded-md">
-          {days.map(({ label, value }) => (
+          {days?.map(({ label, value }) => (
             <span
               key={value}
               onClick={() => setDaysRange(value)}
@@ -315,7 +251,7 @@ const Coins = () => {
         {/* Chart */}
         <div
           className={`mt-8 w-full h-80 sm:h-[28rem] ${
-            market_chart_error || !market_chart
+            market_chart_error || !market_chart_data
               ? 'flex items-center rounded-md bg-gray-100'
               : ''
           }`}
@@ -324,19 +260,10 @@ const Coins = () => {
             <Message error>
               Something went wrong. Please try refreshing the page.
             </Message>
-          ) : !market_chart ? (
+          ) : !market_chart_data ? (
             <Message loading>Please wait, we are loading the chart...</Message>
           ) : (
-            <Chart
-              data={memoized_market_chart}
-              series={series}
-              axes={axes}
-              tooltip={tooltip}
-              getSeriesStyle={getSeriesStyle}
-              getDatumStyle={getDatumStyleMemoized}
-              onFocus={handleOnFocusChart}
-              primaryCursor={primaryCursor}
-            />
+            <MarketChart data={market_chart_data ?? []} />
           )}
         </div>
       </div>
