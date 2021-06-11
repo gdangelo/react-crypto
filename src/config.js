@@ -199,22 +199,13 @@ const coinChart = {
         </div>
       ) : null,
   },
-  getSeriesStyle: series => {
-    const start = series?.datums?.[0]?.yValue,
-      end = series?.datums?.[series.datums.length - 1]?.yValue;
-    return {
-      color: end > start ? '#22C55E' : '#EF4444',
-    };
-  },
-  getDatumStyle: activeDatumIndex => datum => ({
-    r: activeDatumIndex === datum.index ? 7 : 0,
-  }),
 };
 
-export default {
+const config = {
   table: {
     columns,
     limits,
   },
   coinChart,
 };
+export default config;

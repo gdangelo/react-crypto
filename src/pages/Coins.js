@@ -69,9 +69,20 @@ const Coins = () => {
     ];
   }, [market_chart]);
 
-  const getDatumStyleMemoized = useCallback(getDatumStyle(activeDatumIndex), [
-    activeDatumIndex,
-  ]);
+  const getDatumStyleMemoized = useCallback(
+    datum => ({
+      r: activeDatumIndex === datum.index ? 7 : 0,
+    }),
+    [activeDatumIndex]
+  );
+
+  const getSeriesStyle = useCallback(series => {
+    const start = series?.datums?.[0]?.yValue,
+      end = series?.datums?.[series.datums.length - 1]?.yValue;
+    return {
+      color: end > start ? '#22C55E' : '#EF4444',
+    };
+  }, []);
 
   const handleOnClickWatchlist = () => {
     if (isInWatchlist) {
@@ -81,7 +92,7 @@ const Coins = () => {
     }
   };
 
-  const onFocusChart = useCallback(
+  const handleOnFocusChart = useCallback(
     focused => setActiveDatumIndex(focused ? focused.index : -1),
     [setActiveDatumIndex]
   );
@@ -330,7 +341,7 @@ const Coins = () => {
               tooltip={tooltip}
               getSeriesStyle={getSeriesStyle}
               getDatumStyle={getDatumStyleMemoized}
-              onFocus={onFocusChart}
+              onFocus={handleOnFocusChart}
               primaryCursor={primaryCursor}
             />
           )}
